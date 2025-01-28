@@ -5,6 +5,7 @@ from rules.base_rules import RulesEngine
 from rules.network_rules import SecurityGroupRule
 from report.generator import ReportGenerator
 from rules.s3_rules import S3PublicAccessRule, S3EncryptionRule  # We'll create this in a moment
+from rules.iam_rules import IAMAdminPolicyRule, IAMUserCredentialsRule, IAMRolePermissionsRule
 
 def analyze_terraform_file(filepath: str) -> None:
     """
@@ -18,7 +19,10 @@ def analyze_terraform_file(filepath: str) -> None:
     engine.register_rule(S3PublicAccessRule())
     engine.register_rule(S3EncryptionRule())
     engine.register_rule(SecurityGroupRule())
-    
+    engine.register_rule(IAMAdminPolicyRule())
+    engine.register_rule(IAMUserCredentialsRule())
+    engine.register_rule(IAMRolePermissionsRule())
+        
     # Try to read the file
     if not reader.read_file(filepath):
         print("Failed to read file!")
