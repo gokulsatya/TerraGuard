@@ -3,6 +3,7 @@
 import re
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
+from .network_rules import SecurityGroupRule
 
 class SecurityFinding:
     """Represents a security issue found in Terraform code"""
@@ -105,7 +106,8 @@ class RulesEngine:
         # Register default rules
         self.register_rule(S3PublicAccessRule())
         self.register_rule(S3EncryptionRule())
-
+        self.register_rule(SecurityGroupRule())  # Add our new rule
+        
     def register_rule(self, rule: SecurityRule):
         """Adds a new rule to the engine"""
         self.rules.append(rule)

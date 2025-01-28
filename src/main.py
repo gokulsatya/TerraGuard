@@ -2,6 +2,7 @@
 
 from parser.file_reader import TerraformFileReader
 from rules.base_rules import RulesEngine
+from report.generator import ReportGenerator
 
 def analyze_terraform_file(filepath: str) -> None:
     """
@@ -27,21 +28,8 @@ def analyze_terraform_file(filepath: str) -> None:
     content = reader.get_content()
     findings = engine.analyze(content)
     
-    # Report findings
-    if not findings:
-        print("No security issues found!")
-        return
-    
-    print(f"\nFound {len(findings)} potential security issues:\n")
-    for finding in findings:
-        print(f"Issue: {finding['message']}")
-        print(f"Severity: {finding['severity']}")
-        if finding['line_number']:
-            print(f"Line Number: {finding['line_number']}")
-        if finding['suggested_fix']:
-            print("Suggested Fix:")
-            print(finding['suggested_fix'])
-        print("-" * 50)
+    # Generate a colored report
+    ReportGenerator.generate_report(findings)
 
 if __name__ == "__main__":
     import sys
