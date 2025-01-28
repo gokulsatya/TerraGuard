@@ -2,7 +2,9 @@
 
 from parser.file_reader import TerraformFileReader
 from rules.base_rules import RulesEngine
+from rules.network_rules import SecurityGroupRule
 from report.generator import ReportGenerator
+from rules.s3_rules import S3PublicAccessRule, S3EncryptionRule  # We'll create this in a moment
 
 def analyze_terraform_file(filepath: str) -> None:
     """
@@ -11,6 +13,11 @@ def analyze_terraform_file(filepath: str) -> None:
     # Initialize our components
     reader = TerraformFileReader()
     engine = RulesEngine()
+    
+    # Register all our rules
+    engine.register_rule(S3PublicAccessRule())
+    engine.register_rule(S3EncryptionRule())
+    engine.register_rule(SecurityGroupRule())
     
     # Try to read the file
     if not reader.read_file(filepath):
