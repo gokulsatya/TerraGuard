@@ -3,13 +3,13 @@
 from parser.file_reader import TerraformFileReader
 from rules.base_rules import RulesEngine
 from rules.network_rules import SecurityGroupRule
-from report.generator import ReportGenerator
-from rules.s3_rules import S3PublicAccessRule, S3EncryptionRule  # We'll create this in a moment
+from rules.s3_rules import S3PublicAccessRule, S3EncryptionRule
 from rules.iam_rules import IAMAdminPolicyRule, IAMUserCredentialsRule, IAMRolePermissionsRule
+from report.generator import ReportGenerator
 
 def analyze_terraform_file(filepath: str) -> None:
     """
-    Analyzes a Terraform file for security issues
+    Analyzes a Terraform file for security issues and generates comprehensive reports
     """
     # Initialize our components
     reader = TerraformFileReader()
@@ -22,7 +22,7 @@ def analyze_terraform_file(filepath: str) -> None:
     engine.register_rule(IAMAdminPolicyRule())
     engine.register_rule(IAMUserCredentialsRule())
     engine.register_rule(IAMRolePermissionsRule())
-        
+    
     # Try to read the file
     if not reader.read_file(filepath):
         print("Failed to read file!")
@@ -39,8 +39,8 @@ def analyze_terraform_file(filepath: str) -> None:
     content = reader.get_content()
     findings = engine.analyze(content)
     
-    # Generate a colored report
-    ReportGenerator.generate_report(findings)
+    # Generate both console and HTML reports
+    ReportGenerator.generate_report(findings, filepath)
 
 if __name__ == "__main__":
     import sys
