@@ -1,0 +1,95 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>TerraGuard Security Report</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                .header {
+                    background-color: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 5px;
+                    margin-bottom: 20px;
+                }
+                .critical-alert {
+                    background-color: #dc3545;
+                    color: white;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin: 10px 0;
+                }
+                .stats-container {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 20px;
+                }
+                .stat-box {
+                    background-color: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 5px;
+                }
+                .finding {
+                    border: 1px solid #ddd;
+                    padding: 15px;
+                    margin-bottom: 15px;
+                    border-radius: 5px;
+                }
+                .severity-CRITICAL { border-left: 5px solid #dc3545; }
+                .severity-HIGH { border-left: 5px solid #dc3545; }
+                .severity-MEDIUM { border-left: 5px solid #ffc107; }
+                .severity-LOW { border-left: 5px solid #17a2b8; }
+                .suggested-fix {
+                    background-color: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin-top: 10px;
+                }
+                pre {
+                    background-color: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 5px;
+                    overflow-x: auto;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>TerraGuard Security Report</h1>
+                <p>Scanned file: .\examples\network_example.tf</p>
+                <p>Scan time: 2025-01-28 00:58:35</p>
+            </div>
+        
+            <h2>Security Scan Statistics</h2>
+            <div class="stats-container">
+        
+            <div class="stat-box">
+                <h3>Total Findings</h3>
+                <p>1</p>
+            </div>
+        <div class='stat-box'><h3>Findings by Severity</h3><p>HIGH: 1</p></div><div class='stat-box'><h3>Findings by Category</h3><p>SecurityGroupOpenAccess: 1</p></div></div><h2>Detailed Findings</h2>
+                <div class="finding severity-HIGH">
+                    <h3>Rule: SecurityGroupOpenAccess</h3>
+                    <p><strong>Severity:</strong> HIGH</p>
+                    <p><strong>Issue:</strong> Security group allows access from any IP address (0.0.0.0/0)</p>
+                <p><strong>Line Number:</strong> 20</p>
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>Consider restricting access to specific IP ranges:
+                    ingress {
+                        cidr_blocks = ["YOUR-IP-RANGE/32"]  # Example: "192.168.1.0/24"
+                        # ... other configuration ...
+                    }</pre>
+                    </div>
+                    </div>
+        </body>
+        </html>
+        
