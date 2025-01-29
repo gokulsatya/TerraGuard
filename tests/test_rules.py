@@ -1,8 +1,11 @@
 # tests/test_rules.py
 
 import unittest
-from src.rules.base_rules import RulesEngine, S3PublicAccessRule, S3EncryptionRule
-from src.rules.s3_rules import S3PublicAccessRule, S3EncryptionRule  # Changed import location
+from src.rules.base_rules import RulesEngine
+from src.rules.s3_rules import (
+    S3PublicAccessRule,
+    S3EncryptionRule
+)
 class TestSecurityRules(unittest.TestCase):
     def setUp(self):
         self.engine = RulesEngine()
