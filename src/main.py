@@ -1,5 +1,8 @@
 # src/main.py
 
+# Add imports at the top
+from rules.cloudwatch_rules import CloudWatchLogRetentionRule, CloudWatchLogEncryptionRule
+from rules.database_rules import RDSEncryptionRule, RDSPublicAccessRule, RDSBackupRule
 from parser.file_reader import TerraformFileReader
 from rules.base_rules import RulesEngine
 from rules.network_rules import SecurityGroupRule
@@ -22,6 +25,11 @@ def analyze_terraform_file(filepath: str) -> None:
     engine.register_rule(IAMAdminPolicyRule())
     engine.register_rule(IAMUserCredentialsRule())
     engine.register_rule(IAMRolePermissionsRule())
+    engine.register_rule(CloudWatchLogRetentionRule())
+    engine.register_rule(CloudWatchLogEncryptionRule())
+    engine.register_rule(RDSEncryptionRule())
+    engine.register_rule(RDSPublicAccessRule())
+    engine.register_rule(RDSBackupRule())
     
     # Try to read the file
     if not reader.read_file(filepath):

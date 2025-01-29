@@ -19,39 +19,47 @@ class IAMAdminPolicyRule(SecurityRule):
     # src/rules/iam_rules.py - Update the IAMAdminPolicyRule class
     def analyze(self, content: str) -> list:
         self.findings = []
-    
+
         if 'resource "aws_iam_policy"' in content:
-            # Check for overly permissive actions
-            if ('"Action"' in content and '"*"' in content) or \
-               ('"Resource"' in content and '"*"' in content):
-                line_num = self._find_line_number(content, 'aws_iam_policy')
-                finding = SecurityFinding(
-                  self.rule_id,
-                  self.severity,
-                  "IAM policy grants full administrative access",
-                   line_num
-                  )
-                finding.add_suggestion(
-                    """Restrict permissions to only what is needed:
-                    {
-                      "Version": "2012-10-17",
-                     "Statement": [
-                       {
-                         "Effect": "Allow",
-                         "Action": [
-                           "s3:GetObject",
-                            "s3:ListBucket"
-                          ],
-                          "Resource": [
-                            "arn:aws:s3:::specific-bucket",
-                            "arn:aws:s3:::specific-bucket/*"
+            # Check for various overly permissive patterns
+            dangerous_patterns = [
+                (r'"Action"\s*:\s*"\*"', "allows all actions"),
+                (r'"Action"\s*:\s*\[\s*"\*"\s*\]', "allows all actions"),
+                (r'"Resource"\s*:\s*"\*"', "applies to all resources"),
+                (r'"Resource"\s*:\s*\[\s*"\*"\s*\]', "applies to all resources"),
+                (r'"Effect"\s*:\s*"Allow".*"Principal"\s*:\s*"\*"', "allows any principal")
+            ]
+
+            for pattern, message in dangerous_patterns:
+                if re.search(pattern, content, re.MULTILINE | re.DOTALL):
+                    line_num = self._find_line_number(content, 'aws_iam_policy')
+                    finding = SecurityFinding(
+                        self.rule_id,
+                        self.severity,
+                        f"IAM policy {message}, granting excessive permissions",
+                        line_num
+                    )
+                    finding.add_suggestion(
+                        """Restrict permissions to only what is needed:
+                        {
+                          "Version": "2012-10-17",
+                          "Statement": [
+                            {
+                              "Effect": "Allow",
+                              "Action": [
+                                "s3:GetObject",
+                                "s3:ListBucket"
+                              ],
+                              "Resource": [
+                                "arn:aws:s3:::specific-bucket",
+                                "arn:aws:s3:::specific-bucket/*"
+                              ]
+                            }
                           ]
-                        }
-                      ]
-                    }"""
-                 )
-            self.findings.append(finding)
-    
+                        }"""
+                    )
+                    self.findings.append(finding)
+
         return self.findings
 
 
@@ -142,5 +150,5 @@ class IAMRolePermissionsRule(SecurityRule):
                     }"""
                   )
                 self.findings.append(finding)
-    
-            return self.findings
+        
+        return self.findings
