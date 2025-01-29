@@ -172,10 +172,10 @@ class IAMCrossAccountAccessRule(SecurityRule):
     def analyze(self, content: str) -> list:
         self.findings = []
         
-        if 'aws_iam_role' in content:
+        if 'resource "aws_iam_role"' in content:
             # Look for trust relationships with external AWS accounts
             role_blocks = re.finditer(
-                r'resource\s+"aws_iam_role"\s+"([^"]+)"\s*{(.*?)}',
+                r'resource\s+"aws_iam_role"\s+"([^"]+)"\s*{([^}]+)}',
                 content,
                 re.DOTALL
             )
@@ -192,7 +192,7 @@ class IAMCrossAccountAccessRule(SecurityRule):
                         finding = SecurityFinding(
                             self.rule_id,
                             self.severity,
-                            f"Role '{role_name}' allows assumption by any AWS account (*)",
+                            "Cross-account access granted to any AWS account",
                             line_num
                         )
                         finding.add_suggestion("""
@@ -215,11 +215,10 @@ class IAMCrossAccountAccessRule(SecurityRule):
                               ]
                             }""")
                         self.findings.append(finding)
-                        continue
                     
                     # Check for specific account access without ExternalId
-                    if (re.search(r'Principal\s*=\s*{\s*AWS\s*=\s*"arn:aws:iam::\d{12}:root"', role_config) and
-                        'sts:ExternalId' not in role_config):
+                    elif (re.search(r'Principal\s*=\s*{\s*AWS\s*=\s*"arn:aws:iam::\d{12}:root"', role_config) and
+                          not re.search(r'sts:ExternalId["\s]*:', role_config)):  # Updated pattern
                         line_num = self._find_line_number(content, role_name)
                         finding = SecurityFinding(
                             self.rule_id,
