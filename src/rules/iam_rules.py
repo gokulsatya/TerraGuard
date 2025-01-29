@@ -169,11 +169,36 @@ class IAMCrossAccountAccessRule(SecurityRule):
         self.rule_id = "IAMCrossAccountAccess"
         self.severity = "HIGH"
 
+    def _has_external_id(self, role_config: str) -> bool:
+        """
+        Helper method to check if the role configuration includes an ExternalId condition.
+        This handles both HCL and JSON-encoded policy formats, as well as variable interpolation.
+        """
+        external_id_patterns = [
+            r'sts:ExternalId',                                # Basic presence check
+            r'StringEquals\s*[=:]\s*[{\s]*["\']?sts:ExternalId["\']?', # Full condition check
+            r'\${[^}]+}'                                      # Variable interpolation
+        ]
+        return any(re.search(pattern, role_config, re.MULTILINE | re.DOTALL) 
+                  for pattern in external_id_patterns)
+
+    def _has_wildcard_principal(self, role_config: str) -> bool:
+        """
+        Helper method to check if the role allows wildcard (*) principals.
+        This handles both HCL and JSON-encoded policy formats.
+        """
+        wildcard_patterns = [
+            r'Principal\s*[=:]\s*[{\s]*["\']?AWS["\']?\s*[=:]\s*["\']?\*["\']?',
+            r'AWS\s*[=:]\s*["\']?\*["\']?'
+        ]
+        return any(re.search(pattern, role_config, re.MULTILINE | re.DOTALL)
+                  for pattern in wildcard_patterns)
+
     def analyze(self, content: str) -> list:
         self.findings = []
         
         if 'resource "aws_iam_role"' in content:
-            # Look for trust relationships with external AWS accounts
+            # Extract all role blocks
             role_blocks = re.finditer(
                 r'resource\s+"aws_iam_role"\s+"([^"]+)"\s*{([^}]+)}',
                 content,
@@ -184,56 +209,57 @@ class IAMCrossAccountAccessRule(SecurityRule):
                 role_name = role_match.group(1)
                 role_config = role_match.group(2)
                 
-                # Check if this is a cross-account role
-                if 'assume_role_policy' in role_config:
-                    # First, check for wildcard principals
-                    if re.search(r'Principal\s*=\s*{\s*AWS\s*=\s*"\*"', role_config):
-                        line_num = self._find_line_number(content, role_name)
-                        finding = SecurityFinding(
-                            self.rule_id,
-                            self.severity,
-                            "Cross-account access granted to any AWS account",
-                            line_num
-                        )
-                        finding.add_suggestion("""
-                            Restrict cross-account access to specific accounts:
+                if 'assume_role_policy' not in role_config:
+                    continue
+
+                # Check for wildcard principals first
+                if self._has_wildcard_principal(role_config):
+                    finding = SecurityFinding(
+                        self.rule_id,
+                        self.severity,
+                        "Cross-account access granted to any AWS account",
+                        self._find_line_number(content, role_name)
+                    )
+                    finding.add_suggestion("""
+                        Restrict cross-account access to specific accounts:
+                        {
+                          "Version": "2012-10-17",
+                          "Statement": [
                             {
-                              "Version": "2012-10-17",
-                              "Statement": [
-                                {
-                                  "Effect": "Allow",
-                                  "Principal": {
-                                    "AWS": "arn:aws:iam::SPECIFIC-ACCOUNT-ID:root"
-                                  },
-                                  "Action": "sts:AssumeRole",
-                                  "Condition": {
-                                    "StringEquals": {
-                                      "sts:ExternalId": "YOUR-EXTERNAL-ID"
-                                    }
-                                  }
+                              "Effect": "Allow",
+                              "Principal": {
+                                "AWS": "arn:aws:iam::SPECIFIC-ACCOUNT-ID:root"
+                              },
+                              "Action": "sts:AssumeRole",
+                              "Condition": {
+                                "StringEquals": {
+                                  "sts:ExternalId": "YOUR-EXTERNAL-ID"
                                 }
-                              ]
-                            }""")
-                        self.findings.append(finding)
-                    
-                    # Check for specific account access without ExternalId
-                    elif (re.search(r'Principal\s*=\s*{\s*AWS\s*=\s*"arn:aws:iam::\d{12}:root"', role_config) and
-                          not re.search(r'sts:ExternalId["\s]*:', role_config)):  # Updated pattern
-                        line_num = self._find_line_number(content, role_name)
-                        finding = SecurityFinding(
-                            self.rule_id,
-                            self.severity,
-                            f"Role '{role_name}' allows cross-account access without ExternalId condition",
-                            line_num
-                        )
-                        finding.add_suggestion("""
-                            Add ExternalId condition for additional security:
-                            Condition = {
-                              StringEquals = {
-                                "sts:ExternalId": "YOUR-EXTERNAL-ID"
                               }
-                            }""")
-                        self.findings.append(finding)
+                            }
+                          ]
+                        }""")
+                    self.findings.append(finding)
+                    continue
+
+                # Check for specific account access without ExternalId
+                specific_account_pattern = r'arn:aws:iam::\d{12}:root'
+                if (re.search(specific_account_pattern, role_config) and 
+                    not self._has_external_id(role_config)):
+                    finding = SecurityFinding(
+                        self.rule_id,
+                        self.severity,
+                        f"Role '{role_name}' allows cross-account access without ExternalId condition",
+                        self._find_line_number(content, role_name)
+                    )
+                    finding.add_suggestion("""
+                        Add ExternalId condition for additional security:
+                        Condition = {
+                          StringEquals = {
+                            "sts:ExternalId": "YOUR-EXTERNAL-ID"
+                          }
+                        }""")
+                    self.findings.append(finding)
 
         return self.findings
 
