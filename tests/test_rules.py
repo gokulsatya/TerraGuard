@@ -2,7 +2,7 @@
 
 import unittest
 from src.rules.base_rules import RulesEngine, S3PublicAccessRule, S3EncryptionRule
-
+from src.rules.s3_rules import S3PublicAccessRule, S3EncryptionRule  # Changed import location
 class TestSecurityRules(unittest.TestCase):
     def setUp(self):
         self.engine = RulesEngine()
@@ -55,6 +55,38 @@ class TestSecurityRules(unittest.TestCase):
             }
         }
         '''
+    # Add these test methods to the TestSecurityRules class in test_rules.py
+
+    def test_multiple_issues_detection(self):
+        """Test detection of multiple issues in a single resource"""
+        terraform_content = '''
+        resource "aws_s3_bucket" "problematic_bucket" {
+            bucket = "my-risky-bucket"
+            acl    = "public-read"
+            # Missing encryption configuration
+        }
+        '''
+    
+        findings = self.engine.analyze(terraform_content)
+        # Should find both public access and missing encryption
+        self.assertEqual(len(findings), 2)
+
+    def test_malformed_terraform(self):
+        """Test handling of malformed Terraform configurations"""
+        terraform_content = '''
+        resource "aws_s3_bucket" "broken_config" {
+            bucket = "my-bucket"
+            # Missing closing brace
+        '''
+    
+        findings = self.engine.analyze(terraform_content)
+        # Should handle malformed content gracefully
+        self.assertEqual(len(findings), 0)
+
+    def test_empty_configuration(self):
+        """Test handling of empty configurations"""
+        findings = self.engine.analyze("")
+        self.assertEqual(len(findings), 0)    
         
         findings = self.engine.analyze(terraform_content)
         

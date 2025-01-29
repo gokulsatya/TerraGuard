@@ -50,6 +50,40 @@ class TestNetworkSecurityRules(unittest.TestCase):
         
         # We should find no issues
         self.assertEqual(len(findings), 0)
+    
+    # Add these methods to the TestNetworkSecurityRules class
+
+    def test_multiple_security_groups(self):
+        """Test handling of multiple security groups"""
+        terraform_content = '''
+        resource "aws_security_group" "group1" {
+            ingress {
+                cidr_blocks = ["0.0.0.0/0"]
+            }
+        }
+        resource "aws_security_group" "group2" {
+            ingress {
+                cidr_blocks = ["10.0.0.0/8"]
+            }
+        }
+        '''
+    
+        findings = self.rule.analyze(terraform_content)
+        self.assertEqual(len(findings), 1)
+
+    def test_invalid_cidr_blocks(self):
+        """Test handling of invalid CIDR blocks"""
+        terraform_content = '''
+        resource "aws_security_group" "invalid" {
+            ingress {
+                cidr_blocks = ["invalid-cidr"]
+            }
+        }
+        '''
+    
+        findings = self.rule.analyze(terraform_content)
+        # Should handle invalid CIDR blocks gracefully
+        self.assertEqual(len(findings), 0)
 
 if __name__ == '__main__':
     unittest.main()

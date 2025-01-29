@@ -26,6 +26,46 @@ class TestTerraformFileReader(unittest.TestCase):
         # Clean up
         import os
         os.remove("test_config.tf")
+    
+    # Add these methods to the TestTerraformFileReader class
+
+    def test_empty_file(self):
+        """Test handling of empty files"""
+        with open("empty.tf", "w") as f:
+            pass
+    
+        self.reader.read_file("empty.tf")
+        self.assertFalse(self.reader.is_terraform_file())
+        import os
+        os.remove("empty.tf")
+
+    def test_malformed_content(self):
+        """Test handling of malformed Terraform content"""
+        with open("malformed.tf", "w") as f:
+            f.write('This is not valid Terraform content')
+    
+        self.reader.read_file("malformed.tf")
+        self.assertFalse(self.reader.is_terraform_file())
+        import os
+        os.remove("malformed.tf")
+
+    # tests/test_file_reader.py - Update the test_permission_handling method
+    def test_permission_handling(self):
+        """Test handling of permission issues"""
+        import sys
+        if sys.platform != "win32":
+            # Unix-specific permission test
+            with open("readonly.tf", "w") as f:
+                f.write('resource "aws_s3_bucket" "test" {}')
         
+            import os
+            os.chmod("readonly.tf", 0o000)
+            result = self.reader.read_file("readonly.tf")
+            self.assertFalse(result)
+            os.chmod("readonly.tf", 0o666)
+            os.remove("readonly.tf")
+        else:
+            # Windows alternative test
+            self.skipTest("Skipping permission test on Windows")
 if __name__ == '__main__':
     unittest.main()
