@@ -85,5 +85,54 @@ class TestNetworkSecurityRules(unittest.TestCase):
         # Should handle invalid CIDR blocks gracefully
         self.assertEqual(len(findings), 0)
 
+# Add these test classes to tests/test_network_rules.py
+
+class TestPortExposureRule(unittest.TestCase):
+    def setUp(self):
+        self.rule = PortExposureRule()
+    
+    def test_sensitive_port_exposure(self):
+        """Test detection of exposed sensitive ports"""
+        terraform_content = '''
+        resource "aws_security_group" "exposed_ports" {
+            name = "exposed-ports"
+            
+            ingress {
+                from_port   = 22
+                to_port     = 22
+                protocol    = "tcp"
+                cidr_blocks = ["0.0.0.0/0"]
+            }
+        }
+        '''
+        
+        findings = self.rule.analyze(terraform_content)
+        self.assertEqual(len(findings), 1)
+        self.assertTrue(any("SSH port (22)" in finding.message for finding in findings))
+
+class TestNetworkACLRule(unittest.TestCase):
+    def setUp(self):
+        self.rule = NetworkACLRule()
+    
+    def test_permissive_nacl(self):
+        """Test detection of overly permissive NACLs"""
+        terraform_content = '''
+        resource "aws_network_acl" "open_nacl" {
+            vpc_id = aws_vpc.main.id
+            
+            ingress {
+                protocol   = "-1"
+                rule_no    = 50
+                action     = "allow"
+                cidr_block = "0.0.0.0/0"
+                from_port  = 0
+                to_port    = 0
+            }
+        }
+        '''
+        
+        findings = self.rule.analyze(terraform_content)
+        self.assertEqual(len(findings), 2)  # Should find both permissive rule and missing deny
+
 if __name__ == '__main__':
     unittest.main()

@@ -152,3 +152,170 @@ class IAMRolePermissionsRule(SecurityRule):
                 self.findings.append(finding)
         
         return self.findings
+
+# Add these new classes to src/rules/iam_rules.py
+
+class IAMCrossAccountAccessRule(SecurityRule):
+    """
+    Rule to analyze and validate cross-account access configurations.
+    Checks for overly permissive cross-account access and validates
+    that only necessary permissions are granted across accounts.
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.rule_id = "IAMCrossAccountAccess"
+        self.severity = "HIGH"
+
+    def analyze(self, content: str) -> list:
+        self.findings = []
+        
+        # Check for cross-account role assumptions
+        if 'aws_iam_role' in content:
+            # Look for trust relationships with external AWS accounts
+            cross_account_patterns = [
+                (r'Principal.*AWS.*arn:aws:iam::(\d{12}):root', 
+                 "Cross-account access granted to full account"),
+                (r'Principal.*AWS.*\*', 
+                 "Cross-account access granted to any AWS account"),
+            ]
+
+            for pattern, message in cross_account_patterns:
+                if re.search(pattern, content, re.MULTILINE | re.DOTALL):
+                    line_num = self._find_line_number(content, 'aws_iam_role')
+                    finding = SecurityFinding(
+                        self.rule_id,
+                        self.severity,
+                        f"Potentially risky cross-account access: {message}",
+                        line_num
+                    )
+                    finding.add_suggestion("""
+                        Restrict cross-account access:
+                        1. Use specific account IDs instead of wildcards
+                        2. Limit the role's permissions to only what's needed
+                        3. Consider using external ID for additional security
+                        
+                        Example:
+                        {
+                          "Version": "2012-10-17",
+                          "Statement": [
+                            {
+                              "Effect": "Allow",
+                              "Principal": {
+                                "AWS": "arn:aws:iam::SPECIFIC-ACCOUNT-ID:root"
+                              },
+                              "Action": "sts:AssumeRole",
+                              "Condition": {
+                                "StringEquals": {
+                                  "sts:ExternalId": "YOUR-EXTERNAL-ID"
+                                }
+                              }
+                            }
+                          ]
+                        }""")
+                    self.findings.append(finding)
+
+        return self.findings
+
+class IAMPasswordPolicyRule(SecurityRule):
+    """
+    Rule to validate IAM password policy settings.
+    Ensures that password policies meet security best practices
+    for length, complexity, and rotation requirements.
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.rule_id = "IAMPasswordPolicy"
+        self.severity = "MEDIUM"
+        
+        # Define baseline password policy requirements
+        self.min_password_length = 14
+        self.require_symbols = True
+        self.require_numbers = True
+        self.require_uppercase = True
+        self.require_lowercase = True
+        self.password_reuse_prevention = 24
+        self.max_password_age = 90
+
+    def analyze(self, content: str) -> list:
+        self.findings = []
+        
+        if 'resource "aws_iam_account_password_policy"' in content:
+            # Check various password policy settings
+            policy_checks = [
+                (r'minimum_password_length\s*=\s*(\d+)',
+                 lambda x: int(x) >= self.min_password_length,
+                 f"Password length should be at least {self.min_password_length} characters"),
+                
+                (r'require_symbols\s*=\s*(true|false)',
+                 lambda x: x.lower() == 'true',
+                 "Password policy should require symbols"),
+                
+                (r'require_numbers\s*=\s*(true|false)',
+                 lambda x: x.lower() == 'true',
+                 "Password policy should require numbers"),
+                
+                (r'require_uppercase_characters\s*=\s*(true|false)',
+                 lambda x: x.lower() == 'true',
+                 "Password policy should require uppercase characters"),
+                
+                (r'require_lowercase_characters\s*=\s*(true|false)',
+                 lambda x: x.lower() == 'true',
+                 "Password policy should require lowercase characters"),
+                
+                (r'password_reuse_prevention\s*=\s*(\d+)',
+                 lambda x: int(x) >= self.password_reuse_prevention,
+                 f"Password reuse prevention should be set to at least {self.password_reuse_prevention}"),
+                
+                (r'max_password_age\s*=\s*(\d+)',
+                 lambda x: int(x) <= self.max_password_age,
+                 f"Maximum password age should be {self.max_password_age} days or less")
+            ]
+
+            for pattern, validator, message in policy_checks:
+                match = re.search(pattern, content)
+                if not match or not validator(match.group(1)):
+                    line_num = self._find_line_number(content, 'aws_iam_account_password_policy')
+                    finding = SecurityFinding(
+                        self.rule_id,
+                        self.severity,
+                        message,
+                        line_num
+                    )
+                    finding.add_suggestion("""
+                        Configure a strong password policy:
+                        resource "aws_iam_account_password_policy" "strict" {
+                          minimum_password_length        = 14
+                          require_lowercase_characters   = true
+                          require_uppercase_characters   = true
+                          require_numbers               = true
+                          require_symbols               = true
+                          allow_users_to_change_password = true
+                          password_reuse_prevention     = 24
+                          max_password_age             = 90
+                        }""")
+                    self.findings.append(finding)
+        else:
+            # No password policy defined
+            finding = SecurityFinding(
+                self.rule_id,
+                self.severity,
+                "No IAM password policy is defined",
+                None
+            )
+            finding.add_suggestion("""
+                Define a password policy with security best practices:
+                resource "aws_iam_account_password_policy" "strict" {
+                  minimum_password_length        = 14
+                  require_lowercase_characters   = true
+                  require_uppercase_characters   = true
+                  require_numbers               = true
+                  require_symbols               = true
+                  allow_users_to_change_password = true
+                  password_reuse_prevention     = 24
+                  max_password_age             = 90
+                }""")
+            self.findings.append(finding)
+
+        return self.findings

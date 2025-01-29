@@ -50,3 +50,111 @@ class S3EncryptionRule(SecurityRule):
                 }""")
                 self.findings.append(finding)
         return self.findings
+
+class S3LoggingRule(SecurityRule):
+    """
+    Rule to check if S3 buckets have logging enabled.
+    Logging is crucial for security auditing and monitoring bucket access.
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.rule_id = "S3LoggingDisabled"
+        self.severity = "MEDIUM"
+    
+    def analyze(self, content: str) -> list:
+        self.findings = []
+        
+        if 'resource "aws_s3_bucket"' in content:
+            # Check for logging configuration
+            bucket_blocks = re.finditer(
+                r'resource\s+"aws_s3_bucket"\s+"([^"]+)"\s*{([^}]+)}',
+                content,
+                re.DOTALL
+            )
+            
+            for match in bucket_blocks:
+                bucket_name = match.group(1)
+                bucket_config = match.group(2)
+                
+                # Look for logging block
+                if 'logging' not in bucket_config:
+                    line_num = self._find_line_number(content, bucket_name)
+                    finding = SecurityFinding(
+                        self.rule_id,
+                        self.severity,
+                        f"S3 bucket '{bucket_name}' does not have logging enabled",
+                        line_num
+                    )
+                    finding.add_suggestion("""
+                        Enable logging for your S3 bucket:
+                        resource "aws_s3_bucket" "example" {
+                          # ... other configuration ...
+                          
+                          logging {
+                            target_bucket = aws_s3_bucket.log_bucket.id
+                            target_prefix = "log/"
+                          }
+                        }
+                        
+                        # Don't forget to create a separate bucket for logs
+                        resource "aws_s3_bucket" "log_bucket" {
+                          bucket = "example-logs"
+                          # ... appropriate security configurations ...
+                        }""")
+                    self.findings.append(finding)
+        
+        return self.findings
+
+class S3VersioningRule(SecurityRule):
+    """
+    Rule to check if S3 buckets have versioning enabled.
+    Versioning helps protect against accidental or malicious deletion and modifications.
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.rule_id = "S3VersioningDisabled"
+        self.severity = "MEDIUM"
+    
+    def analyze(self, content: str) -> list:
+        self.findings = []
+        
+        if 'resource "aws_s3_bucket"' in content:
+            # Check for versioning configuration
+            bucket_blocks = re.finditer(
+                r'resource\s+"aws_s3_bucket"\s+"([^"]+)"\s*{([^}]+)}',
+                content,
+                re.DOTALL
+            )
+            
+            for match in bucket_blocks:
+                bucket_name = match.group(1)
+                bucket_config = match.group(2)
+                
+                # Look for versioning block and ensure it's enabled
+                versioning_disabled = (
+                    'versioning' not in bucket_config or
+                    re.search(r'versioning\s*{\s*enabled\s*=\s*false', bucket_config)
+                )
+                
+                if versioning_disabled:
+                    line_num = self._find_line_number(content, bucket_name)
+                    finding = SecurityFinding(
+                        self.rule_id,
+                        self.severity,
+                        f"S3 bucket '{bucket_name}' does not have versioning enabled",
+                        line_num
+                    )
+                    finding.add_suggestion("""
+                        Enable versioning for your S3 bucket:
+                        resource "aws_s3_bucket" "example" {
+                          # ... other configuration ...
+                          
+                          versioning {
+                            enabled = true
+                          }
+                        }""")
+                    self.findings.append(finding)
+        
+        return self.findings

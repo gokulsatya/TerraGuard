@@ -5,9 +5,20 @@ from rules.cloudwatch_rules import CloudWatchLogRetentionRule, CloudWatchLogEncr
 from rules.database_rules import RDSEncryptionRule, RDSPublicAccessRule, RDSBackupRule
 from parser.file_reader import TerraformFileReader
 from rules.base_rules import RulesEngine
-from rules.network_rules import SecurityGroupRule
-from rules.s3_rules import S3PublicAccessRule, S3EncryptionRule
-from rules.iam_rules import IAMAdminPolicyRule, IAMUserCredentialsRule, IAMRolePermissionsRule
+from rules.network_rules import SecurityGroupRule, PortExposureRule, NetworkACLRule
+from rules.s3_rules import (
+    S3PublicAccessRule,
+    S3EncryptionRule,
+    S3LoggingRule,
+    S3VersioningRule
+)
+from rules.iam_rules import (
+    IAMAdminPolicyRule, 
+    IAMUserCredentialsRule, 
+    IAMRolePermissionsRule,
+    IAMCrossAccountAccessRule,    # New
+    IAMPasswordPolicyRule         # New
+)
 from report.generator import ReportGenerator
 
 def analyze_terraform_file(filepath: str) -> None:
@@ -25,12 +36,16 @@ def analyze_terraform_file(filepath: str) -> None:
     engine.register_rule(IAMAdminPolicyRule())
     engine.register_rule(IAMUserCredentialsRule())
     engine.register_rule(IAMRolePermissionsRule())
+    engine.register_rule(IAMCrossAccountAccessRule())  # New
+    engine.register_rule(IAMPasswordPolicyRule())      # New
     engine.register_rule(CloudWatchLogRetentionRule())
     engine.register_rule(CloudWatchLogEncryptionRule())
     engine.register_rule(RDSEncryptionRule())
     engine.register_rule(RDSPublicAccessRule())
     engine.register_rule(RDSBackupRule())
-    
+    engine.register_rule(PortExposureRule())
+    engine.register_rule(NetworkACLRule())
+
     # Try to read the file
     if not reader.read_file(filepath):
         print("Failed to read file!")
