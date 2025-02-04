@@ -5,7 +5,6 @@ from src.rules.iam_rules import (
     IAMAdminPolicyRule,
     IAMUserCredentialsRule,
     IAMRolePermissionsRule,
-    IAMCrossAccountAccessRule,
     IAMPasswordPolicyRule
 )
 class TestIAMSecurityRules(unittest.TestCase):
@@ -13,7 +12,6 @@ class TestIAMSecurityRules(unittest.TestCase):
         self.admin_rule = IAMAdminPolicyRule()
         self.credentials_rule = IAMUserCredentialsRule()
         self.role_rule = IAMRolePermissionsRule()
-        self.cross_account_rule = IAMCrossAccountAccessRule()
         self.password_policy_rule = IAMPasswordPolicyRule()
     
     def test_admin_policy_detection(self):
@@ -98,7 +96,6 @@ from src.rules.iam_rules import (
     IAMAdminPolicyRule,
     IAMUserCredentialsRule,
     IAMRolePermissionsRule,
-    IAMCrossAccountAccessRule,
     IAMPasswordPolicyRule
 )
 
@@ -108,66 +105,7 @@ class TestIAMSecurityRules(unittest.TestCase):
         self.admin_rule = IAMAdminPolicyRule()
         self.credentials_rule = IAMUserCredentialsRule()
         self.role_rule = IAMRolePermissionsRule()
-        self.cross_account_rule = IAMCrossAccountAccessRule()
         self.password_policy_rule = IAMPasswordPolicyRule()
-
-    # Previous test methods remain unchanged...
-    
-    def test_cross_account_access_detection(self):
-        """Test detection of risky cross-account access configurations"""
-        # Test case 1: Role allowing any AWS account
-        terraform_content = '''
-        resource "aws_iam_role" "risky_role" {
-            name = "risky-cross-account-role"
-            
-            assume_role_policy = jsonencode({
-                Version = "2012-10-17"
-                Statement = [
-                    {
-                        Effect = "Allow"
-                        Principal = {
-                            AWS = "*"  # This is dangerous!
-                        }
-                        Action = "sts:AssumeRole"
-                    }
-                ]
-            })
-        }
-        '''
-        
-        findings = self.cross_account_rule.analyze(terraform_content)
-        self.assertEqual(len(findings), 1)
-        self.assertTrue(
-            "Cross-account access granted to any AWS account" in findings[0].message
-        )
-
-        # Test case 2: Properly restricted cross-account access
-        terraform_content = '''
-        resource "aws_iam_role" "secure_role" {
-            name = "secure-cross-account-role"
-            
-            assume_role_policy = jsonencode({
-                Version = "2012-10-17"
-                Statement = [
-                    {
-                        Effect = "Allow"
-                        Principal = {
-                            AWS = "arn:aws:iam::123456789012:root"
-                        }
-                        Action = "sts:AssumeRole"
-                        Condition = {
-                            StringEquals = {
-                                "sts:ExternalId": "SecureExternalId"
-                            }
-                        }
-                    }
-                ]
-            })
-        }
-        '''
-        
-        findings = self.cross_account_rule.analyze(terraform_content)
-        self.assertEqual(len(findings), 0)
 
     def test_password_policy_validation(self):
         """Test validation of IAM password policy settings"""
@@ -217,35 +155,6 @@ class TestIAMSecurityRules(unittest.TestCase):
         '''
         
         findings = self.password_policy_rule.analyze(terraform_content)
-        self.assertEqual(len(findings), 0)
-
-    def test_cross_account_with_external_id(self):
-        """Test cross-account access configurations with external ID"""
-        terraform_content = '''
-        resource "aws_iam_role" "cross_account" {
-            name = "cross-account-role"
-            
-            assume_role_policy = jsonencode({
-                Version = "2012-10-17"
-                Statement = [
-                    {
-                        Effect = "Allow"
-                        Principal = {
-                            AWS = "arn:aws:iam::123456789012:root"
-                        }
-                        Action = "sts:AssumeRole"
-                        Condition = {
-                            StringEquals = {
-                                "sts:ExternalId": "${var.external_id}"
-                            }
-                        }
-                    }
-                ]
-            })
-        }
-        '''
-        
-        findings = self.cross_account_rule.analyze(terraform_content)
         self.assertEqual(len(findings), 0)
 
     def test_password_policy_edge_cases(self):

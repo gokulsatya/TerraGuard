@@ -36,7 +36,6 @@ def analyze_terraform_file(filepath: str) -> None:
     engine.register_rule(IAMAdminPolicyRule())
     engine.register_rule(IAMUserCredentialsRule())
     engine.register_rule(IAMRolePermissionsRule())
-    engine.register_rule(IAMCrossAccountAccessRule())  # New
     engine.register_rule(IAMPasswordPolicyRule())      # New
     engine.register_rule(CloudWatchLogRetentionRule())
     engine.register_rule(CloudWatchLogEncryptionRule())
