@@ -3,6 +3,7 @@
 # Add imports at the top
 from rules.cloudwatch_rules import CloudWatchLogRetentionRule, CloudWatchLogEncryptionRule
 from rules.cloud_service_rules import ElasticSearchSecurityRule, LambdaSecurityRule
+from rules.messaging_rules import SNSTopicSecurityRule, SQSQueueSecurityRule
 from rules.database_rules import RDSEncryptionRule, RDSPublicAccessRule, RDSBackupRule
 from parser.file_reader import TerraformFileReader
 from rules.base_rules import RulesEngine
@@ -56,6 +57,8 @@ def analyze_terraform_file(filepath: str) -> None:
     engine.register_rule(ECSSecurityRule())
     engine.register_rule(EKSSecurityRule())
     engine.register_rule(DynamoDBSecurityRule())
+    engine.register_rule(SNSTopicSecurityRule())
+    engine.register_rule(SQSQueueSecurityRule())
 
     # Try to read the file
     if not reader.read_file(filepath):
