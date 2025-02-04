@@ -1,0 +1,174 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>TerraGuard Security Report</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                .header {
+                    background-color: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 5px;
+                    margin-bottom: 20px;
+                }
+                .critical-alert {
+                    background-color: #dc3545;
+                    color: white;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin: 10px 0;
+                }
+                .stats-container {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 20px;
+                }
+                .stat-box {
+                    background-color: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 5px;
+                }
+                .finding {
+                    border: 1px solid #ddd;
+                    padding: 15px;
+                    margin-bottom: 15px;
+                    border-radius: 5px;
+                }
+                .severity-CRITICAL { border-left: 5px solid #dc3545; }
+                .severity-HIGH { border-left: 5px solid #dc3545; }
+                .severity-MEDIUM { border-left: 5px solid #ffc107; }
+                .severity-LOW { border-left: 5px solid #17a2b8; }
+                .suggested-fix {
+                    background-color: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin-top: 10px;
+                }
+                pre {
+                    background-color: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 5px;
+                    overflow-x: auto;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>TerraGuard Security Report</h1>
+                <p>Scanned file: examples/cloud_services_example.tf</p>
+                <p>Scan time: 2025-02-04 01:49:38</p>
+            </div>
+        
+            <h2>Security Scan Statistics</h2>
+            <div class="stats-container">
+        
+            <div class="stat-box">
+                <h3>Total Findings</h3>
+                <p>5</p>
+            </div>
+        <div class='stat-box'><h3>Findings by Severity</h3><p>MEDIUM: 2</p><p>HIGH: 3</p></div><div class='stat-box'><h3>Findings by Category</h3><p>IAMPasswordPolicy: 1</p><p>ElasticSearchSecurity: 1</p><p>ElasticSearchNodeEncryption: 1</p><p>LambdaSecurity: 1</p><p>LambdaVPCAccess: 1</p></div></div><h2>Detailed Findings</h2>
+                <div class="finding severity-MEDIUM">
+                    <h3>Rule: IAMPasswordPolicy</h3>
+                    <p><strong>Severity:</strong> MEDIUM</p>
+                    <p><strong>Issue:</strong> No IAM password policy is defined</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                Define a password policy with security best practices:
+                resource "aws_iam_account_password_policy" "strict" {
+                  minimum_password_length        = 14
+                  require_lowercase_characters   = true
+                  require_uppercase_characters   = true
+                  require_numbers               = true
+                  require_symbols               = true
+                  allow_users_to_change_password = true
+                  password_reuse_prevention     = 24
+                  max_password_age             = 90
+                }</pre>
+                    </div>
+                    </div>
+                <div class="finding severity-HIGH">
+                    <h3>Rule: ElasticSearchSecurity</h3>
+                    <p><strong>Severity:</strong> HIGH</p>
+                    <p><strong>Issue:</strong> Elasticsearch domain 'insecure_es' does not have encryption at rest enabled</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                        Enable encryption at rest:
+                        resource "aws_elasticsearch_domain" "example" {
+                          # ... other configuration ...
+                          encrypt_at_rest {
+                            enabled = true
+                          }
+                        }</pre>
+                    </div>
+                    </div>
+                <div class="finding severity-HIGH">
+                    <h3>Rule: ElasticSearchNodeEncryption</h3>
+                    <p><strong>Severity:</strong> HIGH</p>
+                    <p><strong>Issue:</strong> Elasticsearch domain 'insecure_es' does not have node-to-node encryption enabled</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                        Enable node-to-node encryption:
+                        resource "aws_elasticsearch_domain" "example" {
+                          # ... other configuration ...
+                          node_to_node_encryption {
+                            enabled = true
+                          }
+                        }</pre>
+                    </div>
+                    </div>
+                <div class="finding severity-HIGH">
+                    <h3>Rule: LambdaSecurity</h3>
+                    <p><strong>Severity:</strong> HIGH</p>
+                    <p><strong>Issue:</strong> Lambda function 'insecure_lambda' has unencrypted environment variables</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                        Encrypt environment variables with KMS:
+                        resource "aws_lambda_function" "example" {
+                          # ... other configuration ...
+                          environment {
+                            variables = {
+                              MY_SECRET = "sensitive-value"
+                            }
+                          }
+                          kms_key_arn = aws_kms_key.lambda_key.arn
+                        }</pre>
+                    </div>
+                    </div>
+                <div class="finding severity-MEDIUM">
+                    <h3>Rule: LambdaVPCAccess</h3>
+                    <p><strong>Severity:</strong> MEDIUM</p>
+                    <p><strong>Issue:</strong> Lambda function 'insecure_lambda' is not configured to run in a VPC</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                        Configure Lambda to run in a VPC for enhanced security:
+                        resource "aws_lambda_function" "example" {
+                          # ... other configuration ...
+                          vpc_config {
+                            subnet_ids         = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+                            security_group_ids = [aws_security_group.lambda_sg.id]
+                          }
+                        }</pre>
+                    </div>
+                    </div>
+        </body>
+        </html>
+        

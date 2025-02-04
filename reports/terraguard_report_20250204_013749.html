@@ -1,0 +1,147 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>TerraGuard Security Report</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                .header {
+                    background-color: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 5px;
+                    margin-bottom: 20px;
+                }
+                .critical-alert {
+                    background-color: #dc3545;
+                    color: white;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin: 10px 0;
+                }
+                .stats-container {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 20px;
+                }
+                .stat-box {
+                    background-color: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 5px;
+                }
+                .finding {
+                    border: 1px solid #ddd;
+                    padding: 15px;
+                    margin-bottom: 15px;
+                    border-radius: 5px;
+                }
+                .severity-CRITICAL { border-left: 5px solid #dc3545; }
+                .severity-HIGH { border-left: 5px solid #dc3545; }
+                .severity-MEDIUM { border-left: 5px solid #ffc107; }
+                .severity-LOW { border-left: 5px solid #17a2b8; }
+                .suggested-fix {
+                    background-color: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin-top: 10px;
+                }
+                pre {
+                    background-color: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 5px;
+                    overflow-x: auto;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>TerraGuard Security Report</h1>
+                <p>Scanned file: examples/api_gateway_example.tf</p>
+                <p>Scan time: 2025-02-04 01:37:49</p>
+            </div>
+        
+            <h2>Security Scan Statistics</h2>
+            <div class="stats-container">
+        
+            <div class="stat-box">
+                <h3>Total Findings</h3>
+                <p>3</p>
+            </div>
+        <div class='stat-box'><h3>Findings by Severity</h3><p>MEDIUM: 2</p><p>HIGH: 1</p></div><div class='stat-box'><h3>Findings by Category</h3><p>IAMPasswordPolicy: 1</p><p>APIGatewayNoAuth: 1</p><p>APIGatewayNoApiKey: 1</p></div></div><h2>Detailed Findings</h2>
+                <div class="finding severity-MEDIUM">
+                    <h3>Rule: IAMPasswordPolicy</h3>
+                    <p><strong>Severity:</strong> MEDIUM</p>
+                    <p><strong>Issue:</strong> No IAM password policy is defined</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                Define a password policy with security best practices:
+                resource "aws_iam_account_password_policy" "strict" {
+                  minimum_password_length        = 14
+                  require_lowercase_characters   = true
+                  require_uppercase_characters   = true
+                  require_numbers               = true
+                  require_symbols               = true
+                  allow_users_to_change_password = true
+                  password_reuse_prevention     = 24
+                  max_password_age             = 90
+                }</pre>
+                    </div>
+                    </div>
+                <div class="finding severity-HIGH">
+                    <h3>Rule: APIGatewayNoAuth</h3>
+                    <p><strong>Severity:</strong> HIGH</p>
+                    <p><strong>Issue:</strong> API Gateway method 'insecure_method' has no authorization configured</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                Configure appropriate authorization:
+                resource "aws_api_gateway_method" "example" {
+                  rest_api_id   = aws_api_gateway_rest_api.example.id
+                  resource_id   = aws_api_gateway_resource.example.id
+                  http_method   = "GET"
+                  authorization = "AWS_IAM"  # Use appropriate auth type
+                  
+                  # For Cognito:
+                  # authorization = "COGNITO_USER_POOLS"
+                  # authorizer_id = aws_api_gateway_authorizer.cognito.id
+                  
+                  # For Custom authorizer:
+                  # authorization = "CUSTOM"
+                  # authorizer_id = aws_api_gateway_authorizer.custom.id
+                }</pre>
+                    </div>
+                    </div>
+                <div class="finding severity-MEDIUM">
+                    <h3>Rule: APIGatewayNoApiKey</h3>
+                    <p><strong>Severity:</strong> MEDIUM</p>
+                    <p><strong>Issue:</strong> API Gateway method 'insecure_method' does not require an API key for write operation</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                    Require API key for write operations:
+                    resource "aws_api_gateway_method" "example" {
+                      # ... other configuration ...
+                      api_key_required = true
+                    }
+                    
+                    # Don't forget to create and configure the API key:
+                    resource "aws_api_gateway_api_key" "example" {
+                      name = "my-api-key"
+                    }</pre>
+                    </div>
+                    </div>
+        </body>
+        </html>
+        

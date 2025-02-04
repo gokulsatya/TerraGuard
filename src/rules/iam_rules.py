@@ -3,7 +3,6 @@
 from .base_rules import SecurityRule, SecurityFinding
 import re
 import json
-
 class IAMAdminPolicyRule(SecurityRule):
     """
     Rule to check for IAM policies that might grant excessive administrative privileges.
@@ -16,7 +15,6 @@ class IAMAdminPolicyRule(SecurityRule):
         self.rule_id = "IAMExcessiveAdmin"
         self.severity = "HIGH"
 
-    # src/rules/iam_rules.py - Update the IAMAdminPolicyRule class
     def analyze(self, content: str) -> list:
         self.findings = []
 

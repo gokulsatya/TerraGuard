@@ -2,9 +2,11 @@
 
 # Add imports at the top
 from rules.cloudwatch_rules import CloudWatchLogRetentionRule, CloudWatchLogEncryptionRule
+from rules.cloud_service_rules import ElasticSearchSecurityRule, LambdaSecurityRule
 from rules.database_rules import RDSEncryptionRule, RDSPublicAccessRule, RDSBackupRule
 from parser.file_reader import TerraformFileReader
 from rules.base_rules import RulesEngine
+from rules.api_gateway_rules import APIGatewayAuthorizationRule
 from rules.network_rules import SecurityGroupRule, PortExposureRule, NetworkACLRule
 from rules.s3_rules import (
     S3PublicAccessRule,
@@ -16,8 +18,12 @@ from rules.iam_rules import (
     IAMAdminPolicyRule, 
     IAMUserCredentialsRule, 
     IAMRolePermissionsRule,
-    IAMCrossAccountAccessRule,    # New
     IAMPasswordPolicyRule         # New
+)
+from rules.container_db_rules import (
+    ECSSecurityRule,
+    EKSSecurityRule,
+    DynamoDBSecurityRule
 )
 from report.generator import ReportGenerator
 
@@ -39,11 +45,17 @@ def analyze_terraform_file(filepath: str) -> None:
     engine.register_rule(IAMPasswordPolicyRule())      # New
     engine.register_rule(CloudWatchLogRetentionRule())
     engine.register_rule(CloudWatchLogEncryptionRule())
+    engine.register_rule(APIGatewayAuthorizationRule())
     engine.register_rule(RDSEncryptionRule())
     engine.register_rule(RDSPublicAccessRule())
     engine.register_rule(RDSBackupRule())
     engine.register_rule(PortExposureRule())
     engine.register_rule(NetworkACLRule())
+    engine.register_rule(ElasticSearchSecurityRule())
+    engine.register_rule(LambdaSecurityRule())
+    engine.register_rule(ECSSecurityRule())
+    engine.register_rule(EKSSecurityRule())
+    engine.register_rule(DynamoDBSecurityRule())
 
     # Try to read the file
     if not reader.read_file(filepath):

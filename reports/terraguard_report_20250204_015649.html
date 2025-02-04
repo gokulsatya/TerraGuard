@@ -1,0 +1,215 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>TerraGuard Security Report</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                .header {
+                    background-color: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 5px;
+                    margin-bottom: 20px;
+                }
+                .critical-alert {
+                    background-color: #dc3545;
+                    color: white;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin: 10px 0;
+                }
+                .stats-container {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 20px;
+                }
+                .stat-box {
+                    background-color: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 5px;
+                }
+                .finding {
+                    border: 1px solid #ddd;
+                    padding: 15px;
+                    margin-bottom: 15px;
+                    border-radius: 5px;
+                }
+                .severity-CRITICAL { border-left: 5px solid #dc3545; }
+                .severity-HIGH { border-left: 5px solid #dc3545; }
+                .severity-MEDIUM { border-left: 5px solid #ffc107; }
+                .severity-LOW { border-left: 5px solid #17a2b8; }
+                .suggested-fix {
+                    background-color: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin-top: 10px;
+                }
+                pre {
+                    background-color: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 5px;
+                    overflow-x: auto;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>TerraGuard Security Report</h1>
+                <p>Scanned file: examples/container_db_example.tf</p>
+                <p>Scan time: 2025-02-04 01:56:49</p>
+            </div>
+        
+            <h2>Security Scan Statistics</h2>
+            <div class="stats-container">
+        
+            <div class="stat-box">
+                <h3>Total Findings</h3>
+                <p>6</p>
+            </div>
+        <div class='stat-box'><h3>Findings by Severity</h3><p>MEDIUM: 3</p><p>HIGH: 3</p></div><div class='stat-box'><h3>Findings by Category</h3><p>IAMPasswordPolicy: 1</p><p>ECSLoggingDisabled: 1</p><p>EKSEncryption: 1</p><p>EKSPublicAccess: 1</p><p>DynamoDBEncryption: 1</p><p>DynamoDBRecovery: 1</p></div></div><h2>Detailed Findings</h2>
+                <div class="finding severity-MEDIUM">
+                    <h3>Rule: IAMPasswordPolicy</h3>
+                    <p><strong>Severity:</strong> MEDIUM</p>
+                    <p><strong>Issue:</strong> No IAM password policy is defined</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                Define a password policy with security best practices:
+                resource "aws_iam_account_password_policy" "strict" {
+                  minimum_password_length        = 14
+                  require_lowercase_characters   = true
+                  require_uppercase_characters   = true
+                  require_numbers               = true
+                  require_symbols               = true
+                  allow_users_to_change_password = true
+                  password_reuse_prevention     = 24
+                  max_password_age             = 90
+                }</pre>
+                    </div>
+                    </div>
+                <div class="finding severity-MEDIUM">
+                    <h3>Rule: ECSLoggingDisabled</h3>
+                    <p><strong>Severity:</strong> MEDIUM</p>
+                    <p><strong>Issue:</strong> ECS Task 'insecure_task' does not have logging configured</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                        Enable container logging:
+                        resource "aws_ecs_task_definition" "example" {
+                          container_definitions = jsonencode([
+                            {
+                              name = "app"
+                              logConfiguration = {
+                                logDriver = "awslogs"
+                                options = {
+                                  "awslogs-group" = "/ecs/app-logs"
+                                  "awslogs-region" = "us-west-2"
+                                  "awslogs-stream-prefix" = "app"
+                                }
+                              }
+                            }
+                          ])
+                        }</pre>
+                    </div>
+                    </div>
+                <div class="finding severity-HIGH">
+                    <h3>Rule: EKSEncryption</h3>
+                    <p><strong>Severity:</strong> HIGH</p>
+                    <p><strong>Issue:</strong> EKS Cluster 'insecure_cluster' does not have encryption configured</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                        Enable encryption for EKS secrets:
+                        resource "aws_eks_cluster" "example" {
+                          # ... other configuration ...
+                          encryption_config {
+                            provider {
+                              key_arn = aws_kms_key.eks.arn
+                            }
+                            resources = ["secrets"]
+                          }
+                        }</pre>
+                    </div>
+                    </div>
+                <div class="finding severity-HIGH">
+                    <h3>Rule: EKSPublicAccess</h3>
+                    <p><strong>Severity:</strong> HIGH</p>
+                    <p><strong>Issue:</strong> EKS Cluster 'insecure_cluster' has unrestricted public access</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                            Restrict public access to specific IP ranges:
+                            resource "aws_eks_cluster" "example" {
+                              vpc_config {
+                                endpoint_public_access = true
+                                public_access_cidrs   = ["YOUR-IP/32"]
+                              }
+                            }
+                            
+                            # Or disable public access entirely:
+                            vpc_config {
+                              endpoint_public_access = false
+                              endpoint_private_access = true
+                            }</pre>
+                    </div>
+                    </div>
+                <div class="finding severity-HIGH">
+                    <h3>Rule: DynamoDBEncryption</h3>
+                    <p><strong>Severity:</strong> HIGH</p>
+                    <p><strong>Issue:</strong> DynamoDB table 'insecure_table' is not using customer-managed KMS key</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                        Enable encryption with a customer-managed KMS key:
+                        resource "aws_dynamodb_table" "example" {
+                          name = "example-table"
+                          # ... other configuration ...
+                          
+                          server_side_encryption {
+                            enabled     = true
+                            kms_key_arn = aws_kms_key.dynamodb.arn
+                          }
+                        }
+                        
+                        resource "aws_kms_key" "dynamodb" {
+                          description             = "KMS key for DynamoDB encryption"
+                          deletion_window_in_days = 7
+                          enable_key_rotation     = true
+                        }</pre>
+                    </div>
+                    </div>
+                <div class="finding severity-MEDIUM">
+                    <h3>Rule: DynamoDBRecovery</h3>
+                    <p><strong>Severity:</strong> MEDIUM</p>
+                    <p><strong>Issue:</strong> DynamoDB table 'insecure_table' does not have point-in-time recovery enabled</p>
+                
+                    <div class="suggested-fix">
+                        <h4>Suggested Fix:</h4>
+                        <pre>
+                        Enable point-in-time recovery for data protection:
+                        resource "aws_dynamodb_table" "example" {
+                          # ... other configuration ...
+                          
+                          point_in_time_recovery {
+                            enabled = true
+                          }
+                        }</pre>
+                    </div>
+                    </div>
+        </body>
+        </html>
+        

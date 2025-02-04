@@ -267,7 +267,7 @@ class ReportGenerator:
         filename = f"terraguard_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
         report_path = os.path.join(report_dir, filename)
         
-        with open(report_path, 'w') as f:
+        with open(report_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
             
         return report_path
