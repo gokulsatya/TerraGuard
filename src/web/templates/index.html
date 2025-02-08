@@ -1,0 +1,35 @@
+# src/web/templates/index.html
+{% extends "base.html" %}
+
+{% block title %}Security Scanner{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="upload-form">
+        <h2 class="text-center mb-4">Upload Terraform Configuration</h2>
+        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="file" class="form-label">Select Terraform File (.tf)</label>
+                <input type="file" class="form-control" id="file" name="file" accept=".tf">
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Analyze Security</button>
+        </form>
+    </div>
+
+    <div class="reports-list">
+        <h3>Recent Reports</h3>
+        {% if reports %}
+            <div class="list-group">
+                {% for report in reports %}
+                    <a href="{{ url_for('view_report', filename=report) }}" 
+                       class="list-group-item list-group-item-action">
+                        {{ report }}
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">No reports available yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
