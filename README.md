@@ -137,14 +137,6 @@ Contributions are welcome! Here's how you can help:
 
 Please ensure your code includes appropriate tests and documentation.
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-Special thanks to the security community and Terraform developers who have documented common security issues and best practices that this tool helps identify.
-
 ## Future Enhancements
 
 While the current version is fully functional, future enhancements could include:
