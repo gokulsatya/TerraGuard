@@ -15,4 +15,4 @@ resource "aws_api_gateway_method" "secure_method" {
   http_method   = "GET"
   authorization = "AWS_IAM"
   api_key_required = true
-}
+}    
